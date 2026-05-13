@@ -4,23 +4,23 @@ namespace controllers;
 
 use Classes\Db;
 use Classes\Helper;
-
+use Classes\SqlSrv;
 
 
 class JaheshController
 {
 
+    private $botName = 'jaheshfund';
     public function crm()
     {
-        $db = Db::getInstance();
-        $data = $db->query("SELECT * FROM jaheshfund WHERE sent_at IS NULL");
+        $data = SqlSrv::getInstance()->raw("SELECT * FROM [$this->botName] WHERE sent_at IS NULL");
 
         if ($data) {
             foreach ($data as $datum) {
-                $name = $datum['name'];
+                $name = $datum['fullname'];
                 $number = Helper::persianToEnglish($datum['number']);
 
-                Helper::reqCRM('op', 'jaheshfund', [
+                Helper::reqCRM('op', $this->botName, [
                     'MobileNumber' => $number,
                     'FullName' => $name,
                     'CustomerNeedID' => '9150',

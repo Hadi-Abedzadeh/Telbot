@@ -4,14 +4,17 @@ namespace controllers;
 
 use Classes\Db;
 use Classes\Helper;
+use Classes\SqlSrv;
 use Classes\Telegraph;
 
 class LabkhandController
 {
+    
+    private $botId = '@farabi_labkhand_bot';
+    private $botName = 'labkhand';
     public function index()
     {
-        $botId = '@farabi_labkhand_bot';
-        $botName = 'labkhand';
+
 
         $data = file_get_contents("php://input");
         $update = json_decode($data, true);
@@ -25,7 +28,7 @@ class LabkhandController
 
             if ($text === "/start") {
                 $userState = ['state' => 'waiting_for_name', 'name' => null];
-                Telegraph::saveUserStateToDB($chatId, $userState, $botName);
+                Telegraph::saveUserStateToDB($chatId, $userState, $this->botName);
                 Telegraph::sendMessage($chatId, "نام و نام خانوادگی خود را وارد کنید✍️");
             } else {
                 $currentState = $userState['state'] ?? 'start';
@@ -35,7 +38,7 @@ class LabkhandController
                         if (preg_match('/^[\x{0600}-\x{06FF}\x{FB8A}\x{067E}\x{0686}\x{0698}\x{06AF}\x{200C}\s]+$/u', $text)) {
                             $userState['name'] = $text;
                             $userState['state'] = 'waiting_for_phone';
-                            Telegraph::saveUserStateToDB($chatId, $userState, $botName);
+                            Telegraph::saveUserStateToDB($chatId, $userState, $this->botName);
                             Telegraph::sendMessage($chatId, "📱 لطفاً شماره تلفن خود را وارد کنید: 🔢✨");
                         } else {
                             Telegraph::sendMessage($chatId, "✍️نام می‌بایست با حروف فارسی وارد شود.");
@@ -45,23 +48,23 @@ class LabkhandController
                         $text = Helper::persianToEnglish($text);
                         if (preg_match('/^\d{9,12}$/', $text)) {
                             $db = Db::getInstance();
-                            $checkNum = $db->first("SELECT * FROM {$botName} WHERE number = '{$text}' AND created_at > DATE_SUB(NOW(), INTERVAL 1 MONTH)");
+                            $checkNum = $db->first("SELECT * FROM {$this->botName} WHERE number = '{$text}' AND created_at > DATE_SUB(NOW(), INTERVAL 1 MONTH)");
 
                             if ($checkNum) {
                                 Telegraph::sendMessage($chatId, "📌 شماره شما در یک ماه گذشته در سیستم وجود دارد. ⏳✨");
-                                Telegraph::deleteUserStateFromDB($chatId, $botName);
+                                Telegraph::deleteUserStateFromDB($chatId, $this->botName);
                                 exit;
                             }
 
                             $userState['phone'] = $text;
 
                             $userState['state'] = 'completed';
-                            Telegraph::saveUserStateToDB($chatId, $userState, $botName);
+                            Telegraph::saveUserStateToDB($chatId, $userState, $this->botName);
 
                             $name = $userState['name'];
                             $phone = $userState['phone'];
 
-                            $db->insert("INSERT INTO {$botName} (chat_id, name, number, created_at, origin) VALUES (:chat_id, :name, :number, :created_at, :origin)",
+                            $db->insert("INSERT INTO {$this->botName} (chat_id, name, number, created_at, origin) VALUES (:chat_id, :name, :number, :created_at, :origin)",
                                 [
                                     'chat_id'          => $chatId,
                                     'name'             => $name,
@@ -71,8 +74,8 @@ class LabkhandController
                                 ]);
 
                             Telegraph::sendMessage($chatId, "درخواست مشاوره شما با موفقیت ثبت شد! ✅
-                             \nبه‌زودی با شما تماس می‌گیریم. 📞"."\n\n".$botId);
-                            Telegraph::deleteUserStateFromDB($chatId, $botName);
+                             \nبه‌زودی با شما تماس می‌گیریم. 📞"."\n\n".$this->botId);
+                            Telegraph::deleteUserStateFromDB($chatId, $this->botName);
 
                         } else {
                             Telegraph::sendMessage($chatId, "📱 لطفاً شماره تلفن معتبر وارد کنید (فقط اعداد).\n📌 مثال: 09123456789 ✅");
@@ -90,8 +93,7 @@ class LabkhandController
 
     public function crm()
     {
-        $db = Db::getInstance();
-        $data = $db->query("SELECT * FROM labkhand WHERE sent_at IS NULL");
+        $data = SqlSrv::getInstance()->raw("SELECT * FROM [$this->botName] WHERE sent_at IS NULL");
 
 
         if ($data) {
@@ -100,7 +102,7 @@ class LabkhandController
                 $name = $datum['name'];
                 $number = Helper::persianToEnglish($datum['number']);
 
-                Helper::reqCRM('op', 'labkhand', [
+                Helper::reqCRM('op', $this->botName, [
                     'MobileNumber' => $number,
                     'FullName' => $name,
                     'CustomerNeedID' => 185,

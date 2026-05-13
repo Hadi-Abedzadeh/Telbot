@@ -10,7 +10,6 @@ use PDOException;
  */
 class Db
 {
-
     private static $conn = '';
 
     function __construct()

@@ -4,6 +4,7 @@ namespace controllers;
 
 use Classes\Db;
 use Classes\Helper;
+use Classes\SqlSrv;
 use Classes\Telegraph;
 
 
@@ -156,13 +157,12 @@ class CreditController
 
     public function crm()
     {
-        $db = new Db();
-        $data = $db->query("SELECT * FROM credit WHERE sent_at is null");
+        $data = SqlSrv::getInstance()->raw("SELECT * FROM credit WHERE sent_at is null");
 
         foreach($data as $datum) {
-            $name             = $datum['name'];
+            $name             = $datum['fullname'];
             $number           = Helper::persianToEnglish($datum['number']);
-            $portfoy          = $datum['portfoy'];
+            $portfoy          = $datum['portfolioValue'];
             $last_transaction = $datum['last_transaction'];
             $origin           = $datum['origin'];
 

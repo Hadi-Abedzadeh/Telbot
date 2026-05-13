@@ -4,24 +4,27 @@ namespace controllers;
 
 use Classes\Db;
 use Classes\Helper;
+use Classes\SqlSrv;
 use Classes\Telegraph;
 
 
 class SynergyController
 {
+
+    private $botName = 'synergy';
     public function crm()
     {
-        $db = Db::getInstance();
-        $data = $db->query("SELECT * FROM synergy_v2 WHERE sent_at IS NULL LIMIT 1");
+        exit('check she ghable bahre bardari');
+        $data = SqlSrv::getInstance()->raw("SELECT * FROM [$this->botName] WHERE sent_at IS NULL");
 
         if ($data) {
             foreach ($data as $datum) {
                 $name = $datum['name'];
                 $number = Helper::persianToEnglish($datum['number']);
 
-                Helper::reqCRM('op', 'synergy_v2', [
+                Helper::reqCRM('op', $this->botName, [
                     'MobileNumber'     => $number,
-                    'FullName'         => $name,
+//                    'FullName'         => $name,
                     'CustomerNeedID'   => 4031,
                     'QuestionCategory' => 21561,
                     'Topic'            => 'درخواست مشاوره سینرژی',

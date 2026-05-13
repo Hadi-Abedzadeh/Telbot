@@ -4,14 +4,16 @@ namespace controllers;
 
 use Classes\Db;
 use Classes\Helper;
+use Classes\SqlSrv;
 use Classes\Telegraph;
 
 class GoldController
 {
+    private $botName = 'gold';
+    private $botId = '@farabi_gold_bot';
+
     public function index()
     {
-        $botId = '@farabi_gold_bot';
-        $botName = 'gold';
 
 
         $data = file_get_contents("php://input");
@@ -26,7 +28,7 @@ class GoldController
 
             if ($text === "/start") {
                 $userState = ['state' => 'waiting_for_name', 'name' => null];
-                Telegraph::saveUserStateToDB($chatId, $userState, $botName);
+                Telegraph::saveUserStateToDB($chatId, $userState, $this->botName);
                 Telegraph::sendMessage($chatId, "نام و نام خانوادگی خود را وارد کنید✍️");
             } else {
                 $currentState = $userState['state'] ?? 'start';
@@ -36,7 +38,7 @@ class GoldController
                         if (preg_match('/^[\x{0600}-\x{06FF}\x{FB8A}\x{067E}\x{0686}\x{0698}\x{06AF}\x{200C}\s]+$/u', $text)) {
                             $userState['name'] = $text;
                             $userState['state'] = 'waiting_for_phone';
-                            Telegraph::saveUserStateToDB($chatId, $userState, $botName);
+                            Telegraph::saveUserStateToDB($chatId, $userState, $this->botName);
                             Telegraph::sendMessage($chatId, "📱 لطفاً شماره تلفن خود را وارد کنید: 🔢✨");
                         } else {
                             Telegraph::sendMessage($chatId, "✍️نام می‌بایست با حروف فارسی وارد شود.");
@@ -46,23 +48,23 @@ class GoldController
                         $text = Helper::persianToEnglish($text);
                         if (preg_match('/^\d{9,12}$/', $text)) {
                             $db = Db::getInstance();
-                            $checkNum = $db->first("SELECT * FROM {$botName} WHERE number = '{$text}' AND created_at > DATE_SUB(NOW(), INTERVAL 1 MONTH)");
+                            $checkNum = $db->first("SELECT * FROM {$this->botName} WHERE number = '{$text}' AND created_at > DATE_SUB(NOW(), INTERVAL 1 MONTH)");
 
                             if ($checkNum) {
                                 Telegraph::sendMessage($chatId, "📌 شماره شما در یک ماه گذشته در سیستم وجود دارد. ⏳✨");
-                                Telegraph::deleteUserStateFromDB($chatId, $botName);
+                                Telegraph::deleteUserStateFromDB($chatId, $this->botName);
                                 exit;
                             }
 
                             $userState['phone'] = $text;
 
                             $userState['state'] = 'completed';
-                            Telegraph::saveUserStateToDB($chatId, $userState, $botName);
+                            Telegraph::saveUserStateToDB($chatId, $userState, $this->botName);
 
                             $name = $userState['name'];
                             $phone = $userState['phone'];
 
-                            $db->insert("INSERT INTO {$botName} (chat_id, name, number, created_at, origin) VALUES (:chat_id, :name, :number, :created_at, :origin)",
+                            $db->insert("INSERT INTO {$this->botName} (chat_id, name, number, created_at, origin) VALUES (:chat_id, :name, :number, :created_at, :origin)",
                                 [
                                     'chat_id'          => $chatId,
                                     'name'             => $name,
@@ -72,8 +74,8 @@ class GoldController
                                 ]);
 
                             Telegraph::sendMessage($chatId, "درخواست مشاوره شما با موفقیت ثبت شد! ✅
-                             \nبه‌زودی با شما تماس می‌گیریم. 📞"."\n\n".$botId);
-                            Telegraph::deleteUserStateFromDB($chatId, $botName);
+                             \nبه‌زودی با شما تماس می‌گیریم. 📞"."\n\n".$this->botId);
+                            Telegraph::deleteUserStateFromDB($chatId, $this->botName);
 
                         } else {
                             Telegraph::sendMessage($chatId, "📱 لطفاً شماره تلفن معتبر وارد کنید (فقط اعداد).\n📌 مثال: 09123456789 ✅");
@@ -90,20 +92,19 @@ class GoldController
 
     public function crm()
     {
-        $db = Db::getInstance();
-        $data = $db->query("SELECT * FROM gold WHERE sent_at IS NULL AND ipo = 0");
+        $data = SqlSrv::getInstance()->raw("SELECT * FROM [$this->botName] WHERE sent_at IS NULL AND ipo = 0");
 
         if ($data) {
             foreach ($data as $datum) {
                 $number = Helper::persianToEnglish($datum['number']);
 
-                Helper::reqCRM('op', 'gold', [
-                    'MobileNumber' => $number,
-                    'FullName' => $datum['name'],
-                    'CustomerNeedID' => 5936,
+                Helper::reqCRM('op', $this->botName, [
+                    'MobileNumber'     => $number,
+                    'FullName'         => $datum['name'],
+                    'CustomerNeedID'   => 5936,
                     'QuestionCategory' => 5936,
                     'Source'           => $datum['origin'],
-                    'Topic' => 'معرفی صندوق طلای جام فارابی',
+                    'Topic'            => 'معرفی صندوق طلای جام فارابی',
                 ]);
             }
         }

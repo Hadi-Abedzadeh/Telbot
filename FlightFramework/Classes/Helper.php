@@ -37,6 +37,8 @@ class Helper
                 CURLOPT_MAXREDIRS      => 10,
                 CURLOPT_TIMEOUT        => 0,
                 CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_SSL_VERIFYHOST => false,
                 CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
                 CURLOPT_CUSTOMREQUEST  => 'POST',
                 CURLOPT_POSTFIELDS     => json_encode($payload),
@@ -55,25 +57,33 @@ class Helper
                 'http_code' => $http_code
             ];
 
-            $db = Db::getInstance();
-            $query = "UPDATE $db_name SET crm_response = :crm_response, http_code = :http_code";
+            $query = "UPDATE $db_name SET crm_response = ?, http_code = ?";
 
-            if (curl_errno($curl))
-            {
+            $params = [
+                $updateData['crm_response'],
+                $updateData['http_code']
+            ];
+
+            if (curl_errno($curl)) {
                 $query .= ", crm_retry = crm_retry + 1";
             } elseif ($http_code == 200) {
-                $query .= ", sent_at = NOW()";
+                $query .= ", sent_at = GETDATE()";
             }
 
-            $query .= " WHERE number = :number";
-
-            $db->modify($query, $updateData);
-
+            $query .= " WHERE number = ?";
+            $params[] = $updateData['number'];
             curl_close($curl);
+            SqlSrv::getInstance()->raw($query, $params);
+
         }
         catch (Exception $e)
         {
-            $db->modify("UPDATE $db_name set crm_retry = crm_retry + 1, crm_response WHERE number = :number",['number' => $payload['MobileNumber'], 'crm_response' => 'exeption: ' . $e->getMessage()]);
+//            $db->modify("UPDATE $db_name set crm_retry = crm_retry + 1, crm_response WHERE number = :number",['number' => $payload['MobileNumber'], 'crm_response' => 'exeption: ' . $e->getMessage()]);
+
+            SqlSrv::getInstance()->raw("UPDATE $db_name SET crm_retry = crm_retry + 1, crm_response = ? WHERE number = ?", [
+                'exeption: ' . $e->getMessage(),
+                $payload['MobileNumber']
+            ]);
         }
     }
 
