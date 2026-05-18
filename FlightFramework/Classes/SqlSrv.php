@@ -1,9 +1,6 @@
 <?php
 namespace Classes;
 
-
-
-
 class SqlSrv
 {
     private static $instance = null;
@@ -103,7 +100,6 @@ class SqlSrv
             ];
         }
     }
-
 
     public function first($sql, $params = [])
     {

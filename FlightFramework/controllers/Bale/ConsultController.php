@@ -9,9 +9,9 @@ use Classes\Telegraph;
 
 class ConsultController
 {
-    public $botId = '@farabi_consult_bot';
+    public $botId = '@Farabinvest_bot';
     public $botName = 'consult';
-	
+
     public function index()
     {
         $data = file_get_contents("php://input");
@@ -21,13 +21,15 @@ class ConsultController
             $chatId = $update['message']['chat']['id'];
             $text = $update['message']['text'] ?? '';
             $userState = Telegraph::loadUserStateFromDB($chatId);
-			
+            file_put_contents('state_log.txt', date('Y-m-d H:i:s') . " | chatId: {$chatId}\n" . print_r($userState, true) . "\n\n", FILE_APPEND);
+
             if ($text === "/start") {
                 $userState = ['state' => 'waiting_for_name', 'name' => null];
                 Telegraph::saveUserStateToDB($chatId, $userState, $this->botName);
                 Telegraph::sendMessage($chatId, "نام و نام خانوادگی خود را وارد کنید✍️", null, true);
             } else {
                 $currentState = $userState['state'] ?? 'start';
+
                 switch ($currentState) {
                     case 'waiting_for_name':
                         if (preg_match('/^[\x{0600}-\x{06FF}\x{FB8A}\x{067E}\x{0686}\x{0698}\x{06AF}\x{200C}\s]+$/u', $text)) {
@@ -40,15 +42,13 @@ class ConsultController
                         }
                         break;
                     case 'waiting_for_phone':
-					
-	
-                        $text = Helper::persianToEnglish($text);			
+
+                        $text = Helper::persianToEnglish($text);
+
                         if (preg_match('/^\d{9,12}$/', $text)) {
-							
-	
-                            $db = new Db();
-							
-                            $checkNum = $db->first("SELECT * FROM {$this->botName} WHERE number = ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 MONTH)", [$text]);
+
+                            $checkNum = SqlSrv::getInstance()->first("SELECT * FROM {$this->botName} WHERE number = ? AND created_at > DATEADD(MONTH, -1, GETDATE())", [$text]);
+
                             if ($checkNum) {
                                 Telegraph::sendMessage($chatId, "📌 شماره شما در یک ماه گذشته در سیستم وجود دارد. ⏳✨", null, true);
                                 Telegraph::deleteUserStateFromDB($chatId, $this->botName);
@@ -63,14 +63,12 @@ class ConsultController
                             $name = $userState['name'];
                             $phone = $userState['phone'];
 
-                            $db->insert("INSERT INTO {$this->botName} (chat_id, name, number, created_at, origin) VALUES (:chat_id, :name, :number, :created_at, :origin)",
-                                [
-                                    'chat_id'          => $chatId,
-                                    'name'             => $name,
-                                    'number'           => $phone,
-                                    'created_at'       => date('Y-m-d H:i:s'),
-                                    'origin'           => 'Bale'
-                                ]);
+                            SqlSrv::getInstance()->raw("INSERT INTO consult (chat_id, name, number, created_at, origin) VALUES (?, ?, ?, GETDATE(), 'Bale')", [
+                                    $chatId,
+                                    $name,
+                                    $phone
+                                ]
+                            );
 
                             Telegraph::sendMessage($chatId, "درخواست مشاوره شما با موفقیت ثبت شد! ✅
                              \nبه‌زودی با شما تماس می‌گیریم. 📞"."\n\n".$this->botId, null, true);
