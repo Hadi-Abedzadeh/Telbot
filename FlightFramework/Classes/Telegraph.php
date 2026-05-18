@@ -7,35 +7,11 @@ class Telegraph
 {
     public static function loadUserStateFromDB($chatId)
     {
-        return SqlSrv::getInstance()->raw("SELECT state, name, phone, portfolio_value, last_transaction FROM bot_user_states WHERE chat_id = ?", [$chatId]) ?? [];
+        return SqlSrv::getInstance()->first("SELECT state, name, phone, portfolio_value, last_transaction FROM bot_user_states WHERE chat_id = ?", [$chatId]) ?? [];
     }
 
-	public static function saveUserStateToDB($chatId, $userState, $botName)
-	{
-//		$db = new Db();
-//		$db->insert("INSERT INTO bot_user_states
-//		(chat_id, bot_name, state, name, phone, portfolio_value, last_transaction, created_at, updated_at)
-//		VALUES
-//		(:chat_id, :bot_name, :state, :name, :phone, :portfolio_value, :last_transaction, :created_at, :updated_at)
-//		ON DUPLICATE KEY UPDATE
-//		state = VALUES(state),
-//		bot_name = VALUES(bot_name),
-//		name = VALUES(name),
-//		phone = VALUES(phone),
-//		portfolio_value = VALUES(portfolio_value),
-//		last_transaction = VALUES(last_transaction),
-//		updated_at = VALUES(updated_at)",
-//		[
-//		'chat_id' => $chatId,
-//		'state' => $userState['state'],
-//		'bot_name' => $botName,
-//		'name' => $userState['name'] ?? null,
-//		'phone' => $userState['phone'] ?? null,
-//		'portfolio_value' => $userState['portfolio_value'] ?? null,
-//		'last_transaction' => $userState['last_transaction'] ?? null,
-//		'created_at' => date('Y-m-d H:i:s'),
-//		'updated_at' => date('Y-m-d H:i:s')
-//		]);
+    public static function saveUserStateToDB($chatId, $userState, $botName)
+    {
         SqlSrv::getInstance()->raw("MERGE bot_user_states AS target
             USING (
                 SELECT
@@ -77,7 +53,7 @@ class Telegraph
             date('Y-m-d H:i:s')
         ]);
 
-	}
+    }
 
     public static function otherRequestsToDB($chatId, $message, $botName)
     {
@@ -88,8 +64,6 @@ class Telegraph
             date('Y-m-d H:i:s'),
             date('Y-m-d H:i:s')
         ]);
-
-
     }
 
     public static function deleteUserStateFromDB($chatId, $botName)
