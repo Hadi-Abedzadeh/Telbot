@@ -21,7 +21,6 @@ class ConsultController
             $chatId = $update['message']['chat']['id'];
             $text = $update['message']['text'] ?? '';
             $userState = Telegraph::loadUserStateFromDB($chatId);
-            file_put_contents('state_log.txt', date('Y-m-d H:i:s') . " | chatId: {$chatId}\n" . print_r($userState, true) . "\n\n", FILE_APPEND);
 
             if ($text === "/start") {
                 $userState = ['state' => 'waiting_for_name', 'name' => null];
