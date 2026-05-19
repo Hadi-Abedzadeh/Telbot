@@ -2,8 +2,6 @@
 
 namespace Classes;
 
-use Google\Client;
-use Google\Service\Sheets;
 
 class Helper
 {
@@ -20,7 +18,6 @@ class Helper
             case 'fo': $url = "https://crmapi.irfarabi.net:444/api/Case/CreateFollowUp"; break;
             case 'op': $url = "https://crmapi.irfarabi.net:444/api/Case/CreateOpportunity"; break;
         }
-
 
         if($payload['FullName'] == 'تست فارابی'){
             return false;
@@ -78,8 +75,6 @@ class Helper
         }
         catch (Exception $e)
         {
-//            $db->modify("UPDATE $db_name set crm_retry = crm_retry + 1, crm_response WHERE number = :number",['number' => $payload['MobileNumber'], 'crm_response' => 'exeption: ' . $e->getMessage()]);
-
             SqlSrv::getInstance()->raw("UPDATE $db_name SET crm_retry = crm_retry + 1, crm_response = ? WHERE number = ?", [
                 'exeption: ' . $e->getMessage(),
                 $payload['MobileNumber']
