@@ -81,18 +81,10 @@ class Telegraph
             'text' => $text
         ];
 
-        if(!$bale)
-        {
-            $url = Helper::generateTelegramApiUrl($_SERVER['REQUEST_URI']) . "sendMessage";
+        $url = Helper::generateTelegramApiUrl($_SERVER['REQUEST_URI']) . "sendMessage";
 
-            if ($replyMarkup)
-            {
-                $postFields['reply_markup'] = json_encode($replyMarkup);
-            }
-        }
-        else
-        {
-            $url = "https://tapi.bale.ai/bot1544882322:n5tYqOLO6D623P1ebRG1VDRUO4GhZ-IOk4c/sendMessage";
+        if (!$bale && $replyMarkup) {
+            $postFields['reply_markup'] = json_encode($replyMarkup);
         }
 
         $ch = curl_init();

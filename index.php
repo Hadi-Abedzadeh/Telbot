@@ -63,7 +63,7 @@ Flight::route('POST /gold', [$goldController, 'index']);
 Flight::route('GET /gold/crm', [$goldController, 'crm']);
 
 $baleConsultController = new ConsultController();
-Flight::route('POST /bale/consult2', [$baleConsultController, 'index']);
+Flight::route('POST /bale/consult', [$baleConsultController, 'index']);
 Flight::route('GET /bale/consult/crm', [$baleConsultController, 'crm']);
 
 Flight::start();
