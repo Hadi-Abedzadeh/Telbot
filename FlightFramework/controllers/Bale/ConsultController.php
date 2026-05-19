@@ -44,7 +44,7 @@ class ConsultController
 
                         $text = Helper::persianToEnglish($text);
 
-                        if (preg_match('/^\d{9,12}$/', $text)) {
+                        if (preg_match('/^(?:\+98|0098|0)?9\d{9}$/', $text)) {
 
                             $checkNum = SqlSrv::getInstance()->first("SELECT * FROM {$this->botName} WHERE number = ? AND created_at > DATEADD(MONTH, -1, GETDATE())", [$text]);
 
@@ -54,7 +54,7 @@ class ConsultController
                                 exit;
                             }
 
-                            $userState['phone'] = $text;
+                            $userState['phone'] = Helper::persianToEnglish($text);
 
                             $userState['state'] = 'completed';
                             Telegraph::saveUserStateToDB($chatId, $userState, $this->botName);
@@ -62,12 +62,7 @@ class ConsultController
                             $name = $userState['name'];
                             $phone = $userState['phone'];
 
-                            SqlSrv::getInstance()->raw("INSERT INTO consult (chat_id, name, number, created_at, origin) VALUES (?, ?, ?, GETDATE(), 'Bale')", [
-                                    $chatId,
-                                    $name,
-                                    $phone
-                                ]
-                            );
+                            SqlSrv::getInstance()->raw("INSERT INTO consult (chat_id, name, number, created_at, origin) VALUES (?, ?, ?, GETDATE(), 'Bale')", [$chatId, $name, $phone]);
 
                             Telegraph::sendMessage($chatId, "درخواست مشاوره شما با موفقیت ثبت شد! ✅
                              \nبه‌زودی با شما تماس می‌گیریم. 📞"."\n\n".$this->botId, null, true);
