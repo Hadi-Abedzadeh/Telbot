@@ -83,9 +83,7 @@ class Telegraph
 
         $url = Helper::generateTelegramApiUrl($_SERVER['REQUEST_URI']) . "sendMessage";
 
-        if (!$bale && $replyMarkup) {
-            $postFields['reply_markup'] = json_encode($replyMarkup);
-        }
+            $postFields['reply_markup'] = json_encode($replyMarkup, JSON_UNESCAPED_UNICODE);
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
