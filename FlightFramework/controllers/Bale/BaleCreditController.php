@@ -29,16 +29,22 @@ class BaleCreditController
         $data = file_get_contents("php://input");
         $update = json_decode($data, true);
 
+
         if (isset($update['message'])) {
             $chatId = $update['message']['chat']['id'];
             $text = $update['message']['text'] ?? '';
+
 
             $userState = Telegraph::loadUserStateFromDB($chatId);
 
             if ($text === "/start") {
                 $userState = ['state' => 'waiting_for_name', 'name' => null];
+
+
+
                 Telegraph::saveUserStateToDB($chatId, $userState, $botName);
-                Telegraph::sendMessage($chatId, "نام و نام خانوادگی خود را وارد کنید✍️");
+                Telegraph::sendMessage($chatId, "نام و نام خانوادگی خود را وارد کنید✍️", null,true);
+
             } else {
                 $currentState = $userState['state'] ?? 'start';
 
@@ -48,18 +54,18 @@ class BaleCreditController
                             $userState['name'] = $text;
                             $userState['state'] = 'waiting_for_phone';
                             Telegraph::saveUserStateToDB($chatId, $userState, $botName);
-                            Telegraph::sendMessage($chatId, "📱 لطفاً شماره تلفن خود را وارد کنید: 🔢✨");
+                            Telegraph::sendMessage($chatId, "📱 لطفاً شماره تلفن خود را وارد کنید: 🔢✨", null, true);
                         } else {
-                            Telegraph::sendMessage($chatId, "✍️نام می‌بایست با حروف فارسی وارد شود.");
+                            Telegraph::sendMessage($chatId, "✍️نام می‌بایست با حروف فارسی وارد شود.", null, true);
                         }
                         break;
                     case 'waiting_for_phone':
                         $text = Helper::persianToEnglish($text);
-                        if (preg_match('/^\d{9,12}$/', $text)) {
-                            $checkNum = SqlSrv::getInstance()->first("SELECT * FROM {$botName} WHERE number = '{$text}' AND created_at > DATE_SUB(NOW(), INTERVAL 1 MONTH)");
+                        if (preg_match('/^(?:\+98|0098|0)?9\d{9}$/', $text)) {
+                            $checkNum = SqlSrv::getInstance()->first("SELECT * FROM {$botName} WHERE number = ? AND created_at > DATEADD(MONTH, -1, GETDATE())", [$text]);
 
                             if ($checkNum) {
-                                Telegraph::sendMessage($chatId, "📌 شماره شما در یک ماه گذشته در سیستم وجود دارد. ⏳✨");
+                                Telegraph::sendMessage($chatId, "📌 شماره شما در یک ماه گذشته در سیستم وجود دارد. ⏳✨", null,true);
                                 Telegraph::deleteUserStateFromDB($chatId, $botName);
                                 exit;
                             }
@@ -78,10 +84,12 @@ class BaleCreditController
                                 'resize_keyboard' => true,
                                 'one_time_keyboard' => true
                             ];
+
                             Telegraph::sendMessage($chatId, "💼 ارزش حدودی پرتفوی فعلی شما چقدر است؟ 💰📊", $replyMarkup, true);
 
+
                         } else {
-                            Telegraph::sendMessage($chatId, "📱 لطفاً شماره تلفن معتبر وارد کنید (فقط اعداد).\n📌 مثال: 09123456789 ✅");
+                            Telegraph::sendMessage($chatId, "📱 لطفاً شماره تلفن معتبر وارد کنید (فقط اعداد).\n📌 مثال: 09123456789 ✅", null,true);
                         }
                         break;
 
@@ -100,9 +108,9 @@ class BaleCreditController
                                 'resize_keyboard' => true,
                                 'one_time_keyboard' => true
                             ];
-                            Telegraph::sendMessage($chatId, "⌛ از آخرین معامله شما چه مدت گذشته است؟", $replyMarkup);
+                            Telegraph::sendMessage($chatId, "⌛ از آخرین معامله شما چه مدت گذشته است؟", $replyMarkup,true);
                         } else {
-                            Telegraph::sendMessage($chatId, " لطفاً یکی از گزینه‌های موجود را انتخاب کنید: 🔽✨");
+                            Telegraph::sendMessage($chatId, " لطفاً یکی از گزینه‌های موجود را انتخاب کنید: 🔽✨", null,true);
                         }
                         break;
 
@@ -117,15 +125,15 @@ class BaleCreditController
                             $portfolioValue = $userState['portfolio_value'];
                             $lastTransaction = $userState['last_transaction'];
 
-                            SqlSrv::getInstance()->raw("INSERT INTO {$botName} (chat_id, fullname, number, portfoy, last_transaction, created_at, origin) VALUES (:chat_id, :fullname, :number, :portfoy, :last_transaction, :created_at, :origin)",
+                            SqlSrv::getInstance()->raw("INSERT INTO credit (chat_id, fullname, number, portfolioValue, last_transaction, created_at, origin) VALUES (?, ?, ?, ?, ?, ?, ?)",
                                 [
-                                    'chat_id'          => $chatId,
-                                    'fullname'         => $name,
-                                    'number'           => $phone,
-                                    'portfoy'          => $portfolioValue,
-                                    'last_transaction' => $lastTransaction,
-                                    'created_at'       => date('Y-m-d H:i:s'),
-                                    'origin'           => 'Bale'
+                                    $chatId,
+                                    $name,
+                                    $phone,
+                                    $portfolioValue,
+                                    $lastTransaction,
+                                    date('Y-m-d H:i:s'),
+                                    'Bale'
                                 ]);
 
                             $inlineKeyboard = [
@@ -135,15 +143,15 @@ class BaleCreditController
                                     ]
                                 ]
                             ];
-                            Telegraph::sendMessage($chatId, "نام: " . $name . "\nشماره: " . $phone . "\nارزش پرتفوی: " . $portfolioValue . "\nآخرین معامله: " . $lastTransaction . "\n\n" . "درخواست دریافت اعتبار با موفقیت ثبت شد! ✅ به‌زودی با شما تماس می‌گیریم. 📞\nجهت تسریع در فرایند دریافت اعتبار، از طریق لینک زیر در فارابی ثبت‌نام کنید. 🔗✨\n" . $botId, $inlineKeyboard);
+                            Telegraph::sendMessage($chatId, "نام: " . $name . "\nشماره: " . $phone . "\nارزش پرتفوی: " . $portfolioValue . "\nآخرین معامله: " . $lastTransaction . "\n\n" . "درخواست دریافت اعتبار با موفقیت ثبت شد! ✅ به‌زودی با شما تماس می‌گیریم. 📞\nجهت تسریع در فرایند دریافت اعتبار، از طریق لینک زیر در فارابی ثبت‌نام کنید. 🔗✨\n" . $botId, $inlineKeyboard, true);
                             Telegraph::deleteUserStateFromDB($chatId, $botName);
                         } else {
-                            Telegraph::sendMessage($chatId, " لطفاً یکی از گزینه‌های موجود را انتخاب کنید: 🔽✨");
+                            Telegraph::sendMessage($chatId, " لطفاً یکی از گزینه‌های موجود را انتخاب کنید: 🔽✨", null, true);
                         }
                         break;
 
                     default:
-                        Telegraph::sendMessage($chatId, "🚀 لطفاً دستور /start را ارسال کنید. 📩✨");
+                        Telegraph::sendMessage($chatId, "🚀 لطفاً دستور /start را ارسال کنید. 📩✨", null, true);
                         break;
                 }
             }
@@ -162,8 +170,8 @@ class BaleCreditController
             $origin           = $datum['origin'];
 
             $portvalue = ($portfoy === "تا 500 میلیون تومان") ? 500000000 :
-            (($portfoy === "از 500 میلیون تا یک میلیارد تومان") ? 700000000 :
-            (($portfoy === "بیش از یک میلیارد تومان") ? 1000000000 : null));
+                (($portfoy === "از 500 میلیون تا یک میلیارد تومان") ? 700000000 :
+                    (($portfoy === "بیش از یک میلیارد تومان") ? 1000000000 : null));
 
             Helper::reqCRM('fo', 'credit', [
                 'MobileNumber'   => $number,

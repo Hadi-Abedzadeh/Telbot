@@ -86,10 +86,11 @@ class Helper
     public static function generateTelegramApiUrl($currentUrl)
     {
         $tokens = [
-            'credit'       => $_ENV['TOKEN_CREDIT'],
+//            'credit'       => $_ENV['TOKEN_CREDIT'],
             'labkhand'     => $_ENV['TOKEN_LABKHAND'],
             'gold'         => $_ENV['TOKEN_GOLD'],
             'bale/consult' => $_ENV['TOKEN_CONSULT'],
+            'bale/credit'  => $_ENV['TOKEN_BALE_CREDIT'],
         ];
 
         foreach ($tokens as $key => $token) {
