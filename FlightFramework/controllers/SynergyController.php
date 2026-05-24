@@ -10,21 +10,19 @@ use Classes\Telegraph;
 
 class SynergyController
 {
-
     private $botName = 'synergy';
     public function crm()
     {
-        exit('check she ghable bahre bardari');
         $data = SqlSrv::getInstance()->raw("SELECT * FROM [$this->botName] WHERE sent_at IS NULL");
 
         if ($data) {
             foreach ($data as $datum) {
-                $name = $datum['name'];
+                $name = $datum['fullname'];
                 $number = Helper::persianToEnglish($datum['number']);
 
                 Helper::reqCRM('op', $this->botName, [
                     'MobileNumber'     => $number,
-//                    'FullName'         => $name,
+                    'FullName'         => $name,
                     'CustomerNeedID'   => 4031,
                     'QuestionCategory' => 21561,
                     'Topic'            => 'درخواست مشاوره سینرژی',

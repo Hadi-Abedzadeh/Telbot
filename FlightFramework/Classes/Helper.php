@@ -19,7 +19,7 @@ class Helper
             case 'op': $url = "https://crmapi.irfarabi.net:444/api/Case/CreateOpportunity"; break;
         }
 
-        if($payload['FullName'] == 'تست فارابی'){
+        if (preg_match('/(تست|test)/i', $payload['FullName'])) {
             return false;
         }
 
