@@ -13,6 +13,7 @@ use \controllers\JaheshController;
 use \controllers\GoldController;
 use \controllers\TelegramGoldStatisticController;
 use \controllers\Bale\ConsultController;
+use \controllers\Bale\BaleCreditController;
 use \Classes\Helper;
 
 date_default_timezone_set('Asia/Tehran');
@@ -65,5 +66,9 @@ Flight::route('GET /gold/crm', [$goldController, 'crm']);
 $baleConsultController = new ConsultController();
 Flight::route('POST /bale/consult', [$baleConsultController, 'index']);
 Flight::route('GET /bale/consult/crm', [$baleConsultController, 'crm']);
+
+$baleCreditController = new BaleCreditController();
+Flight::route('POST /bale/credit', [$baleCreditController, 'index']);
+Flight::route('GET /bale/credit/crm', [$baleCreditController, 'crm']);
 
 Flight::start();
