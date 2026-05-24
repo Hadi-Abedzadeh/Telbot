@@ -16,7 +16,7 @@ class SalamController
 
         if ($data) {
             foreach ($data as $datum) {
-                $name = $datum['name'];
+                $name = $datum['fullname'];
                 $number = Helper::persianToEnglish($datum['number']);
 
                 Helper::reqCRM('op', $this->botName, [

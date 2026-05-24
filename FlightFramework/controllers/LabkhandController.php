@@ -64,10 +64,10 @@ class LabkhandController
                             $name = $userState['name'];
                             $phone = $userState['phone'];
 
-                            $db->insert("INSERT INTO {$this->botName} (chat_id, name, number, created_at, origin) VALUES (:chat_id, :name, :number, :created_at, :origin)",
+                            $db->insert("INSERT INTO {$this->botName} (chat_id, fullname, number, created_at, origin) VALUES (:chat_id, :fullname, :number, :created_at, :origin)",
                                 [
                                     'chat_id'          => $chatId,
-                                    'name'             => $name,
+                                    'fullname'         => $name,
                                     'number'           => $phone,
                                     'created_at'       => date('Y-m-d H:i:s'),
                                     'origin'           => 'Telegram'
@@ -99,7 +99,7 @@ class LabkhandController
         if ($data) {
             foreach ($data as $datum) {
 
-                $name = $datum['name'];
+                $name = $datum['fullname'];
                 $number = Helper::persianToEnglish($datum['number']);
 
                 Helper::reqCRM('op', $this->botName, [
