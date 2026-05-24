@@ -6,7 +6,7 @@ use Classes\Helper;
 use Classes\SqlSrv;
 use Classes\Telegraph;
 
-define('QUESTION_CHOICES', [
+define('QUESTION_CHOICES_BALE', [
     [
         "از 500 میلیون تا یک میلیارد تومان",
         "تا 500 میلیون تومان",
@@ -71,9 +71,9 @@ class BaleCreditController
 
                             $replyMarkup = [
                                 'keyboard' => [[
-                                    ['text' => QUESTION_CHOICES[0][0]],
-                                    ['text' => QUESTION_CHOICES[0][1]],
-                                    ['text' => QUESTION_CHOICES[0][2]]
+                                    ['text' => QUESTION_CHOICES_BALE[0][0]],
+                                    ['text' => QUESTION_CHOICES_BALE[0][1]],
+                                    ['text' => QUESTION_CHOICES_BALE[0][2]]
                                 ]],
                                 'resize_keyboard' => true,
                                 'one_time_keyboard' => true
@@ -86,16 +86,16 @@ class BaleCreditController
                         break;
 
                     case 'waiting_for_portfolio_value':
-                        if (in_array($text, QUESTION_CHOICES[0])) {
+                        if (in_array($text, QUESTION_CHOICES_BALE[0])) {
                             $userState['portfolio_value'] = $text;
                             $userState['state'] = 'waiting_for_last_transaction';
                             Telegraph::saveUserStateToDB($chatId, $userState, $botName);
 
                             $replyMarkup = [
                                 'keyboard' => [[
-                                    ['text' => QUESTION_CHOICES[1][0]],
-                                    ['text' => QUESTION_CHOICES[1][1]],
-                                    ['text' => QUESTION_CHOICES[1][2]]
+                                    ['text' => QUESTION_CHOICES_BALE[1][0]],
+                                    ['text' => QUESTION_CHOICES_BALE[1][1]],
+                                    ['text' => QUESTION_CHOICES_BALE[1][2]]
                                 ]],
                                 'resize_keyboard' => true,
                                 'one_time_keyboard' => true
@@ -107,7 +107,7 @@ class BaleCreditController
                         break;
 
                     case 'waiting_for_last_transaction':
-                        if (in_array($text, QUESTION_CHOICES[1])) {
+                        if (in_array($text, QUESTION_CHOICES_BALE[1])) {
                             $userState['last_transaction'] = $text;
                             $userState['state'] = 'completed';
                             Telegraph::saveUserStateToDB($chatId, $userState, $botName);
