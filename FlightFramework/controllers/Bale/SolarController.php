@@ -62,7 +62,7 @@ class SolarController
                             $name = $userState['name'];
                             $phone = $userState['phone'];
 
-                            SqlSrv::getInstance()->raw("INSERT INTO $this->botName (chat_id, name, number, created_at, origin) VALUES (?, ?, ?, GETDATE(), 'Bale')", [$chatId, $name, $phone]);
+                            SqlSrv::getInstance()->raw("INSERT INTO $this->botName (chat_id, fullname, number, created_at, origin) VALUES (?, ?, ?, GETDATE(), 'Bale')", [$chatId, $name, $phone]);
 
                             Telegraph::sendMessage($chatId, "ثبت نام در پذیره نویسی با موفقیت ثبت شد! ✅
                              \n\n".$this->botId, null, true);
