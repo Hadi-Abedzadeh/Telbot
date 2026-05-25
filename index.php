@@ -15,6 +15,7 @@ use \controllers\TelegramGoldStatisticController;
 use \controllers\Bale\ConsultController;
 use \controllers\Bale\BaleCreditController;
 use \Classes\Helper;
+use \controllers\Bale\SolarController;
 
 date_default_timezone_set('Asia/Tehran');
 set_time_limit(180);
@@ -70,5 +71,9 @@ Flight::route('GET /bale/consult/crm', [$baleConsultController, 'crm']);
 $baleCreditController = new BaleCreditController();
 Flight::route('POST /bale/credit', [$baleCreditController, 'index']);
 Flight::route('GET /bale/credit/crm', [$baleCreditController, 'crm']);
+
+
+$solarController = new SolarController();
+Flight::route('POST /bale/solar', [$solarController, 'index']);
 
 Flight::start();
