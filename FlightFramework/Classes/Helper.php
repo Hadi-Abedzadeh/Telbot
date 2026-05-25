@@ -91,6 +91,7 @@ class Helper
             'gold'         => $_ENV['TOKEN_GOLD'],
             'bale/consult' => $_ENV['TOKEN_CONSULT'],
             'bale/credit'  => $_ENV['TOKEN_BALE_CREDIT'],
+            'bale/solar'   => $_ENV['TOKEN_BALE_SOLAR'],
         ];
 
         foreach ($tokens as $key => $token) {
