@@ -24,7 +24,7 @@ class LabkhandController
             $text = $update['message']['text'] ?? '';
 
             $db = Db::getInstance();
-            $userState = Telegraph::loadUserStateFromDB($chatId);
+            $userState = Telegraph::loadUserStateFromDB($chatId, $this->botName);
 
             if ($text === "/start") {
                 $userState = ['state' => 'waiting_for_name', 'name' => null];

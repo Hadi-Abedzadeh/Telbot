@@ -5,9 +5,9 @@ namespace Classes;
 
 class Telegraph
 {
-    public static function loadUserStateFromDB($chatId)
+    public static function loadUserStateFromDB($chatId, $botName)
     {
-        return SqlSrv::getInstance()->first("SELECT state, name, phone, portfolio_value, last_transaction FROM bot_user_states WHERE chat_id = ?", [$chatId]) ?? [];
+        return SqlSrv::getInstance()->first("SELECT state, name, phone, portfolio_value, last_transaction FROM bot_user_states WHERE chat_id = ? AND bot_name = ?", [$chatId, $botName]) ?? [];
     }
 
     public static function saveUserStateToDB($chatId, $userState, $botName)
