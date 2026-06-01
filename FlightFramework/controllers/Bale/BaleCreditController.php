@@ -43,7 +43,7 @@ class BaleCreditController
 
 
                 Telegraph::saveUserStateToDB($chatId, $userState, $botName);
-                Telegraph::sendMessage($chatId, "نام و نام خانوادگی خود را وارد کنید✍️", null,true);
+                Telegraph::sendMessage($chatId, "نام و نام خانوادگی خود را وارد کنید✍️");
 
             } else {
                 $currentState = $userState['state'] ?? 'start';
@@ -54,9 +54,9 @@ class BaleCreditController
                             $userState['name'] = $text;
                             $userState['state'] = 'waiting_for_phone';
                             Telegraph::saveUserStateToDB($chatId, $userState, $botName);
-                            Telegraph::sendMessage($chatId, "📱 لطفاً شماره تلفن خود را وارد کنید: 🔢✨", null, true);
+                            Telegraph::sendMessage($chatId, "📱 لطفاً شماره تلفن خود را وارد کنید: 🔢✨");
                         } else {
-                            Telegraph::sendMessage($chatId, "✍️نام می‌بایست با حروف فارسی وارد شود.", null, true);
+                            Telegraph::sendMessage($chatId, "✍️نام می‌بایست با حروف فارسی وارد شود.");
                         }
                         break;
                     case 'waiting_for_phone':
@@ -65,7 +65,7 @@ class BaleCreditController
                             $checkNum = SqlSrv::getInstance()->first("SELECT * FROM {$botName} WHERE number = ? AND created_at > DATEADD(MONTH, -1, GETDATE())", [$text]);
 
                             if ($checkNum) {
-                                Telegraph::sendMessage($chatId, "📌 شماره شما در یک ماه گذشته در سیستم وجود دارد. ⏳✨", null,true);
+                                Telegraph::sendMessage($chatId, "📌 شماره شما در یک ماه گذشته در سیستم وجود دارد. ⏳✨");
                                 Telegraph::deleteUserStateFromDB($chatId, $botName);
                                 exit;
                             }
@@ -85,56 +85,34 @@ class BaleCreditController
                                 'one_time_keyboard' => true
                             ];
 
-                            Telegraph::sendMessage($chatId, "💼 ارزش حدودی پرتفوی فعلی شما چقدر است؟ 💰📊", $replyMarkup, true);
+                            Telegraph::sendMessage($chatId, "💼 ارزش حدودی پرتفوی فعلی شما چقدر است؟ 💰📊", $replyMarkup);
 
 
                         } else {
-                            Telegraph::sendMessage($chatId, "📱 لطفاً شماره تلفن معتبر وارد کنید (فقط اعداد).\n📌 مثال: 09123456789 ✅", null,true);
+                            Telegraph::sendMessage($chatId, "📱 لطفاً شماره تلفن معتبر وارد کنید (فقط اعداد).\n📌 مثال: 09123456789 ✅");
                         }
                         break;
 
                     case 'waiting_for_portfolio_value':
                         if (in_array($text, QUESTION_CHOICES_BALE[0])) {
                             $userState['portfolio_value'] = $text;
-                            $userState['state'] = 'waiting_for_last_transaction';
-                            Telegraph::saveUserStateToDB($chatId, $userState, $botName);
-
-                            $replyMarkup = [
-                                'keyboard' => [[
-                                    ['text' => QUESTION_CHOICES_BALE[1][0]],
-                                    ['text' => QUESTION_CHOICES_BALE[1][1]],
-                                    ['text' => QUESTION_CHOICES_BALE[1][2]]
-                                ]],
-                                'resize_keyboard' => true,
-                                'one_time_keyboard' => true
-                            ];
-                            Telegraph::sendMessage($chatId, "⌛ از آخرین معامله شما چه مدت گذشته است؟", $replyMarkup,true);
-                        } else {
-                            Telegraph::sendMessage($chatId, " لطفاً یکی از گزینه‌های موجود را انتخاب کنید: 🔽✨", null,true);
-                        }
-                        break;
-
-                    case 'waiting_for_last_transaction':
-                        if (in_array($text, QUESTION_CHOICES_BALE[1])) {
-                            $userState['last_transaction'] = $text;
                             $userState['state'] = 'completed';
                             Telegraph::saveUserStateToDB($chatId, $userState, $botName);
 
                             $name = $userState['name'];
                             $phone = $userState['phone'];
                             $portfolioValue = $userState['portfolio_value'];
-                            $lastTransaction = $userState['last_transaction'];
 
-                            SqlSrv::getInstance()->raw("INSERT INTO credit (chat_id, fullname, number, portfolioValue, last_transaction, created_at, origin) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                            SqlSrv::getInstance()->raw("INSERT INTO {$botName} (chat_id, name, number, portfoy, created_at, origin) VALUES (:chat_id, :name, :number, :portfoy, :created_at, :origin)",
                                 [
-                                    $chatId,
-                                    $name,
-                                    $phone,
-                                    $portfolioValue,
-                                    $lastTransaction,
-                                    date('Y-m-d H:i:s'),
-                                    'Bale'
-                                ]);
+                                    'chat_id'    => $chatId,
+                                    'name'       => $name,
+                                    'number'     => $phone,
+                                    'portfoy'    => $portfolioValue,
+                                    'created_at' => date('Y-m-d H:i:s'),
+                                    'origin'     => 'Telegram'
+                                ]
+                            );
 
                             $inlineKeyboard = [
                                 'inline_keyboard' => [
@@ -143,15 +121,21 @@ class BaleCreditController
                                     ]
                                 ]
                             ];
-                            Telegraph::sendMessage($chatId, "نام: " . $name . "\nشماره: " . $phone . "\nارزش پرتفوی: " . $portfolioValue . "\nآخرین معامله: " . $lastTransaction . "\n\n" . "درخواست دریافت اعتبار با موفقیت ثبت شد! ✅ به‌زودی با شما تماس می‌گیریم. 📞\nجهت تسریع در فرایند دریافت اعتبار، از طریق لینک زیر در فارابی ثبت‌نام کنید. 🔗✨\n" . $botId, $inlineKeyboard, true);
+
+                            Telegraph::sendMessage(
+                                $chatId,
+                                "نام: {$name}\nشماره: {$phone}\nارزش پرتفوی: {$portfolioValue}\n\nدرخواست دریافت اعتبار با موفقیت ثبت شد! ✅ به‌زودی با شما تماس می‌گیریم. 📞\nجهت تسریع در فرایند دریافت اعتبار، از طریق لینک زیر در فارابی ثبت‌نام کنید. 🔗✨\n@farabi_creditbot",
+                                $inlineKeyboard
+                            );
+
                             Telegraph::deleteUserStateFromDB($chatId, $botName);
                         } else {
-                            Telegraph::sendMessage($chatId, " لطفاً یکی از گزینه‌های موجود را انتخاب کنید: 🔽✨", null, true);
+                            Telegraph::sendMessage($chatId, " لطفاً یکی از گزینه‌های موجود را انتخاب کنید: 🔽✨");
                         }
                         break;
 
                     default:
-                        Telegraph::sendMessage($chatId, "🚀 لطفاً دستور /start را ارسال کنید. 📩✨", null, true);
+                        Telegraph::sendMessage($chatId, "🚀 لطفاً دستور /start را ارسال کنید. 📩✨");
                         break;
                 }
             }
