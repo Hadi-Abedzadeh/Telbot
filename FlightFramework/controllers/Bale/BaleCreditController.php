@@ -96,23 +96,45 @@ class BaleCreditController
                     case 'waiting_for_portfolio_value':
                         if (in_array($text, QUESTION_CHOICES_BALE[0])) {
                             $userState['portfolio_value'] = $text;
+                            $userState['state'] = 'waiting_for_last_transaction';
+                            Telegraph::saveUserStateToDB($chatId, $userState, $botName);
+
+                            $replyMarkup = [
+                                'keyboard' => [[
+                                    ['text' => QUESTION_CHOICES_BALE[1][0]],
+                                    ['text' => QUESTION_CHOICES_BALE[1][1]],
+                                    ['text' => QUESTION_CHOICES_BALE[1][2]]
+                                ]],
+                                'resize_keyboard' => true,
+                                'one_time_keyboard' => true
+                            ];
+                            Telegraph::sendMessage($chatId, "⌛ از آخرین معامله شما چه مدت گذشته است؟", $replyMarkup);
+                        } else {
+                            Telegraph::sendMessage($chatId, " لطفاً یکی از گزینه‌های موجود را انتخاب کنید: 🔽✨");
+                        }
+                        break;
+
+                    case 'waiting_for_last_transaction':
+                        if (in_array($text, QUESTION_CHOICES_BALE[1])) {
+                            $userState['last_transaction'] = $text;
                             $userState['state'] = 'completed';
                             Telegraph::saveUserStateToDB($chatId, $userState, $botName);
 
                             $name = $userState['name'];
                             $phone = $userState['phone'];
                             $portfolioValue = $userState['portfolio_value'];
+                            $lastTransaction = $userState['last_transaction'];
 
-                            SqlSrv::getInstance()->raw("INSERT INTO {$botName} (chat_id, name, number, portfoy, created_at, origin) VALUES (:chat_id, :name, :number, :portfoy, :created_at, :origin)",
+                            SqlSrv::getInstance()->raw("INSERT INTO credit (chat_id, fullname, number, portfolioValue, last_transaction, created_at, origin) VALUES (?, ?, ?, ?, ?, ?, ?)",
                                 [
-                                    'chat_id'    => $chatId,
-                                    'name'       => $name,
-                                    'number'     => $phone,
-                                    'portfoy'    => $portfolioValue,
-                                    'created_at' => date('Y-m-d H:i:s'),
-                                    'origin'     => 'Telegram'
-                                ]
-                            );
+                                    $chatId,
+                                    $name,
+                                    $phone,
+                                    $portfolioValue,
+                                    $lastTransaction,
+                                    date('Y-m-d H:i:s'),
+                                    'Bale'
+                                ]);
 
                             $inlineKeyboard = [
                                 'inline_keyboard' => [
@@ -121,13 +143,7 @@ class BaleCreditController
                                     ]
                                 ]
                             ];
-
-                            Telegraph::sendMessage(
-                                $chatId,
-                                "نام: {$name}\nشماره: {$phone}\nارزش پرتفوی: {$portfolioValue}\n\nدرخواست دریافت اعتبار با موفقیت ثبت شد! ✅ به‌زودی با شما تماس می‌گیریم. 📞\nجهت تسریع در فرایند دریافت اعتبار، از طریق لینک زیر در فارابی ثبت‌نام کنید. 🔗✨\n@farabi_creditbot",
-                                $inlineKeyboard
-                            );
-
+                            Telegraph::sendMessage($chatId, "نام: " . $name . "\nشماره: " . $phone . "\nارزش پرتفوی: " . $portfolioValue . "\nآخرین معامله: " . $lastTransaction . "\n\n" . "درخواست دریافت اعتبار با موفقیت ثبت شد! ✅ به‌زودی با شما تماس می‌گیریم. 📞\nجهت تسریع در فرایند دریافت اعتبار، از طریق لینک زیر در فارابی ثبت‌نام کنید. 🔗✨\n" . $botId, $inlineKeyboard);
                             Telegraph::deleteUserStateFromDB($chatId, $botName);
                         } else {
                             Telegraph::sendMessage($chatId, " لطفاً یکی از گزینه‌های موجود را انتخاب کنید: 🔽✨");
