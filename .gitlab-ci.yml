@@ -1,0 +1,76 @@
+include:
+  - project: 'internalprojects/utils'
+    ref: master
+    file: '/gitlab/templates/all.yaml'
+
+variables:
+  REGISTRY_URL_STG: jfrog.farabixo.tech/farabi-docker/stg/marketingplus
+  REGISTRY_URL_PROD: jfrog.farabixo.tech/farabi-docker/prod/marketingplus
+  VERSION_REGEX_PROD: '^v.[0-9]+\.[0-9]+\.[0-9]+$'
+  VERSION_REGEX_STG: '^rc.[0-9]+\.[0-9]+\.[0-9]+$'
+
+stages:
+  - publish
+  - push-on-jfrog
+  - update
+
+push-on-jfrog:
+  stage: push-on-jfrog
+  image: jfrog.farabixo.tech/docker-io/docker:24.0.2-dind
+  before_script:
+    - DOCKER_HOST=tcp://$(ip -4 route show default | cut -d" " -f3):2375
+    - docker info
+    - ls -la
+    - mkdir -p $HOME/.docker
+    - echo $DOCKER_AUTH_CONFIG > $HOME/.docker/config.json
+  script:
+    - echo $CI_COMMIT_REF_NAME
+    - echo $CI_COMMIT_TAG
+    - |
+      if [ "$(echo "$CI_COMMIT_REF_NAME" | grep -E "$VERSION_REGEX_PROD")" ]; then
+        VERSION="$CI_COMMIT_TAG"
+        REGISTRY_URL="$REGISTRY_URL_PROD"
+      elif [ "$(echo "$CI_COMMIT_REF_NAME" | grep -E "$VERSION_REGEX_STG")" ]; then
+        VERSION="$CI_COMMIT_TAG"
+        REGISTRY_URL="$REGISTRY_URL_STG"
+        echo "$REGISTRY_URL":"$VERSION"
+      else
+        echo "there is not tag to push on jfrog"
+        exit 1
+      fi
+    - echo "$REGISTRY_URL":"$VERSION"
+    - docker build --rm -f "Dockerfile" --add-host=jfrog.farabixo.tech:192.168.40.31 -t $REGISTRY_URL:$VERSION .
+    - docker push "$REGISTRY_URL":"$VERSION"
+    - echo "Docker Images pushed into registry"
+
+update_values:
+  stage: update
+  image: jfrog.farabixo.tech/general/debugpod:20.04
+  script:
+    - echo $CI_COMMIT_TAG
+    - git clone https://$HELM_USER:$HELM_PASS@git.farabixo.tech/devops/helm/farabi.git
+    - |
+      if [[ $CI_COMMIT_TAG == v.* ]]; then
+       echo "Running for Production"
+       sed -i "s/tag:.*/tag:\ \"$CI_COMMIT_TAG\"/g" ./farabi/marketingplus/values.prod.yaml
+       echo " update value.Production.yml for production "
+      elif [[ $CI_COMMIT_TAG == rc.* ]]; then
+       echo "Running for RC tag ON STAGE"
+       sed -i "s/tag:.*/tag:\ \"$CI_COMMIT_TAG\"/g" ./farabi/marketingplus/values.stg.yaml
+       echo "update value.Staging.yml for Stage"
+      else
+       echo "NO TAGS"
+       exit 1
+      fi
+    - git -C ./farabi status
+    - git -C ./farabi config --global user.email "$HELM_USER@irfarabi.com"
+    - git -C ./farabi config --global user.name "$HELM_USER"
+    - git -C ./farabi add .
+    - git -C ./farabi commit -m "change image version for helm $CI_COMMIT_TAG "
+    - echo "update helm"
+    - git -C ./farabi push
+  only:
+    - tags
+  needs:
+    - push-on-jfrog
+
