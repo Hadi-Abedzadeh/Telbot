@@ -4,8 +4,8 @@ include:
     file: '/gitlab/templates/all.yaml'
 
 variables:
-  REGISTRY_URL_STG: jfrog.farabixo.tech/farabi-docker/stg/marketingplus
-  REGISTRY_URL_PROD: jfrog.farabixo.tech/farabi-docker/prod/marketingplus
+  REGISTRY_URL_STG: jfrog.farabixo.tech/farabi-docker/stg/telbot
+  REGISTRY_URL_PROD: jfrog.farabixo.tech/farabi-docker/prod/telbot
   VERSION_REGEX_PROD: '^v.[0-9]+\.[0-9]+\.[0-9]+$'
   VERSION_REGEX_STG: '^rc.[0-9]+\.[0-9]+\.[0-9]+$'
 
@@ -52,11 +52,11 @@ update_values:
     - |
       if [[ $CI_COMMIT_TAG == v.* ]]; then
        echo "Running for Production"
-       sed -i "s/tag:.*/tag:\ \"$CI_COMMIT_TAG\"/g" ./farabi/marketingplus/values.prod.yaml
+       sed -i "s/tag:.*/tag:\ \"$CI_COMMIT_TAG\"/g" ./farabi/telbot/values.prod.yaml
        echo " update value.Production.yml for production "
       elif [[ $CI_COMMIT_TAG == rc.* ]]; then
        echo "Running for RC tag ON STAGE"
-       sed -i "s/tag:.*/tag:\ \"$CI_COMMIT_TAG\"/g" ./farabi/marketingplus/values.stg.yaml
+       sed -i "s/tag:.*/tag:\ \"$CI_COMMIT_TAG\"/g" ./farabi/telbot/values.stg.yaml
        echo "update value.Staging.yml for Stage"
       else
        echo "NO TAGS"

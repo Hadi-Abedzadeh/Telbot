@@ -54,7 +54,7 @@ class BaleCreditController
                             $userState['name'] = $text;
                             $userState['state'] = 'waiting_for_phone';
                             Telegraph::saveUserStateToDB($chatId, $userState, $botName);
-                            Telegraph::sendMessage($chatId, "📱 لطفاً شماره تلفن خود را وارد کنید: 🔢✨");
+                            Telegraph::sendMessage($chatId, "📱 برای اطلاع از شرایط دریافت اعتبار، شماره تلفن خود را وارد کنید:🔢✨");
                         } else {
                             Telegraph::sendMessage($chatId, "✍️نام می‌بایست با حروف فارسی وارد شود.");
                         }
