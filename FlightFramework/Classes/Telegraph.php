@@ -74,29 +74,78 @@ class Telegraph
         ]);
     }
 
-    public static function sendMessage($chatId, $text, $replyMarkup = null, $bale = false)
+
+    public static function sendMessage($chatId, $text, $replyMarkup = null)
     {
-        $postFields = [
-            'chat_id' => $chatId,
-            'text' => $text
+        $uri = $_SERVER['REQUEST_URI'] ?? '';
+
+        $type = (strpos($uri, 'bale/') !== false) ? 'bale' : 'telegram';
+
+        $bots = [
+            'credit'   => ['telegram' => $_ENV['TOKEN_CREDIT'],       'bale' => $_ENV['TOKEN_BALE_CREDIT']],
+            'labkhand' => ['telegram' => $_ENV['TOKEN_LABKHAND'],     'bale' => null],
+            'gold'     => ['telegram' => $_ENV['TOKEN_GOLD'],         'bale' => null],
+            'consult'  => ['telegram' => null,                        'bale' => $_ENV['TOKEN_CONSULT']],
+            'solar'    => ['telegram' => null,                        'bale' => $_ENV['TOKEN_BALE_SOLAR']],
         ];
 
-        $url = Helper::generateTelegramApiUrl($_SERVER['REQUEST_URI']) . "sendMessage";
-
-            $postFields['reply_markup'] = json_encode($replyMarkup, JSON_UNESCAPED_UNICODE);
-
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_POST, 1);
-        if($bale)
-        {
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        $botKey = null;
+        foreach (array_keys($bots) as $key) {
+            if (strpos($uri, $key) !== false) {
+                $botKey = $key;
+                break;
+            }
         }
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $postFields);
+
+        if (!$botKey) {
+            throw new Exception("No matching bot found.");
+        }
+
+        $token = $bots[$botKey][$type] ?? null;
+        if (!$token) {
+            throw new Exception("Token not configured for bot [$botKey] on [$type].");
+        }
+
+        $params = [
+            'chat_id' => $chatId,
+            'text'    => $text
+        ];
+
+        if ($replyMarkup) {
+            $params['reply_markup'] = json_encode($replyMarkup, JSON_UNESCAPED_UNICODE);
+        }
+
+        if ($type === 'bale') {
+            $ch = curl_init($_ENV['API_URL_BALE'] . $token . '/sendMessage');
+            curl_setopt_array($ch, [
+                CURLOPT_POST => 1,
+                CURLOPT_POSTFIELDS => $params,
+                CURLOPT_SSL_VERIFYPEER => 0,
+                CURLOPT_SSL_VERIFYHOST => 0,
+                CURLOPT_RETURNTRANSFER => true,
+            ]);
+            $response = curl_exec($ch);
+            curl_close($ch);
+            return $response;
+        }
+
+        return self::tg($botKey, 'sendMessage', $params);
+    }
+
+    public static function tg($botKey, $method, $data = [])
+    {
+        $url = "https://foreign-server.com/{$botKey}/api.php?method=" . urlencode($method);
+
+        $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_exec($ch);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 20);
+
+        $response = curl_exec($ch);
         curl_close($ch);
 
+        return $response;
     }
+
 }
