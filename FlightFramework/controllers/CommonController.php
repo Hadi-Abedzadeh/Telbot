@@ -17,7 +17,7 @@ class CommonController
 
         $enableTest = true;
         if ($enableTest) {
-            $test_chat_ids = ['392223271']; // Hadi ChatID
+            $test_chat_ids = ['123123']; // Hadi ChatID
         }
 
         if (isset($bot_name)) {

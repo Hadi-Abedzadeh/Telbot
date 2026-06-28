@@ -9,7 +9,7 @@ use Classes\Telegraph;
 
 class SolarController
 {
-    public $botId = '@farabi_solar_bot';
+    public $botId = '@solar_bot';
     public $botName = 'solar';
 
     public function index()

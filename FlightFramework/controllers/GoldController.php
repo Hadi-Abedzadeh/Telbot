@@ -10,7 +10,7 @@ use Classes\Telegraph;
 class GoldController
 {
     private $botName = 'gold';
-    private $botId = '@farabi_gold_bot';
+    private $botId = '@gold_bot';
 
     public function index()
     {

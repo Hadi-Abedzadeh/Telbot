@@ -26,7 +26,7 @@ class CreditController
 {
     public function index()
     {
-        $botId = '@farabi_creditbot';
+        $botId = 'creditbot';
         $botName = 'credit';
 
         $data = file_get_contents("php://input");
