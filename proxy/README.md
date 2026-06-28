@@ -1,4 +1,6 @@
 # POSTMAN data
+## for update tokens : https://kharej.com/proxy.php?bot_name=update
+
 ## URL: https://kharej.com/proxy.php?bot_name=credit
 ```{
     "bot_name" : "credit", //change to your botname
