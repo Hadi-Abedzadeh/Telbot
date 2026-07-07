@@ -4,24 +4,23 @@ namespace controllers;
 
 use Classes\Db;
 use Classes\Helper;
+use Classes\SqlSrv;
 use Classes\Telegraph;
 
 class CommonController
 {
     public function leaved($bot_name)
     {
-        $message = "برای اطلاع از زمان شروع پذیره‌نویسی، شماره خود را ثبت کنید.";
-
         $test_chat_ids = [];
         $followUpMessage = 0;
 
-        $enableTest = true;
+        $enableTest = (int)$_ENV['ENABLE_TEST_LEAVED_USERS']; // 1 or 0
+
         if ($enableTest) {
-            $test_chat_ids = ['123123']; // Hadi ChatID
+            $test_chat_ids = ['123123'];
         }
 
         if (isset($bot_name)) {
-            $db = Db::getInstance();
 
             $test = "";
 
@@ -30,29 +29,59 @@ class CommonController
                 $test = "AND chat_id IN ('{$chat_id_list}')";
             }
 
-            $result = $db->query("SELECT * FROM bot_user_states WHERE bot_name = :bot_name {$test} AND followUpMessage = :followUpMessage ORDER BY updated_at DESC;", ['bot_name' => $bot_name, 'followUpMessage' => $followUpMessage]);
+            $result = SqlSrv::getInstance()->raw(
+                "SELECT TOP 50 * 
+             FROM bot_user_states 
+             WHERE bot_name = ? {$test} 
+             AND followUpMessage = ? 
+			 AND exception IS NULL
+
+             ORDER BY updated_at DESC;",
+                [$bot_name, $followUpMessage]
+            );
 
             foreach ($result as $row) {
-                if (!empty($row['name']) && isset($row['name'])) {
-                    $dearName = $row['name'] . " عزیز.\n ";
-                } else {
-                    $dearName = "جام طلا را از دست ندهید!\n ";
+
+
+                echo $chat_id = $row['chat_id'];
+                echo "<br>";
+
+                SqlSrv::getInstance()->raw(
+                    "UPDATE bot_user_states 
+                 SET state = 'come_back_message' 
+                 WHERE bot_name = ? AND chat_id = ?",
+                    [$bot_name, $chat_id]
+                );
+
+                try {
+
+                    $response = Telegraph::pushTelegram($bot_name, $chat_id);
+
+
+                    if (isset($response['ok']) && $response['ok'] === true) {
+                        SqlSrv::getInstance()->raw("UPDATE bot_user_states SET followUpMessage = followUpMessage + 1, exception = NULL WHERE bot_name = ? AND chat_id = ?",[$bot_name, $chat_id]);
+                    }
+
+                } catch (\Throwable $e) {
+                    $errorMessage = $e->getMessage();
+
+                    SqlSrv::getInstance()->raw(
+                        "UPDATE bot_user_states 
+                     SET exception = ? ,
+					 followUpMessage = followUpMessage + 1
+                     WHERE bot_name = ? AND chat_id = ?",
+                        [$errorMessage, $bot_name, $chat_id]
+                    );
+
+                    continue; // برو سراغ کاربر بعدی
                 }
-
-
-                $chat_id = $row['chat_id'];
-
-                Telegraph::sendMessage($chat_id, $dearName . $message);
-                $db->modify("UPDATE bot_user_states SET followUpMessage = followUpMessage + 1 WHERE bot_name = :bot_name AND chat_id = :chat_id", [
-                    'bot_name' => $bot_name,
-                    'chat_id' => $chat_id
-                ]);
             }
+
         } else {
             print_r('bot name is not set');
         }
-
     }
+
 
     // ezafe kardane userai ke shomare vared kardan dg jelo naraftan be list
     public function addToDb($botName)
@@ -79,10 +108,25 @@ class CommonController
                     'created_at'       => date('Y-m-d H:i:s'),
                     'origin'           => 'Telegram'
                 ]);
-
         }
-
     }
 
+    public function tokens()
+    {
+        $data = [
+            'CREDIT'      => $_ENV['TOKEN_CREDIT'],
+            'LABKHAND'    => $_ENV['TOKEN_LABKHAND'],
+            'GOLD'        => $_ENV['TOKEN_GOLD'],
+            'CONSULT'     => $_ENV['TOKEN_CONSULT'],
+            'BALE_CREDIT' => $_ENV['TOKEN_BALE_CREDIT'],
+            'BALE_SOLAR'  => $_ENV['TOKEN_BALE_SOLAR'],
+            'UPDATE'      => 'UPDATE_TOKENS'
+        ];
 
+        $encrypted = Helper::encrypt_data($data, 'MY_SECRET_KEY');
+
+        return \Flight::json([
+            'data' => $encrypted
+        ]);
+    }
 }
