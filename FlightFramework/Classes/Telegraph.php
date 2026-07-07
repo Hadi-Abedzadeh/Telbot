@@ -74,7 +74,6 @@ class Telegraph
         ]);
     }
 
-
     public static function sendMessage($chatId, $text, $replyMarkup = null)
     {
         $uri = $_SERVER['REQUEST_URI'] ?? '';
@@ -85,25 +84,26 @@ class Telegraph
             'credit'   => ['telegram' => $_ENV['TOKEN_CREDIT'],       'bale' => $_ENV['TOKEN_BALE_CREDIT']],
             'labkhand' => ['telegram' => $_ENV['TOKEN_LABKHAND'],     'bale' => null],
             'gold'     => ['telegram' => $_ENV['TOKEN_GOLD'],         'bale' => null],
-            'consult'  => ['telegram' => null,                        'bale' => $_ENV['TOKEN_CONSULT']],
+            'consult'  => ['telegram' => $_ENV['TOKEN_CONSULT'],      'bale' => $_ENV['TOKEN_BALE_CONSULT']],
             'solar'    => ['telegram' => null,                        'bale' => $_ENV['TOKEN_BALE_SOLAR']],
+            'exir'     => ['telegram' => null,                        'bale' => $_ENV['TOKEN_BALE_EXIR']],
         ];
 
-        $botKey = null;
+        $token = null;
         foreach (array_keys($bots) as $key) {
             if (strpos($uri, $key) !== false) {
-                $botKey = $key;
+                $token = $key;
                 break;
             }
         }
 
-        if (!$botKey) {
+        if (!$token) {
             throw new Exception("No matching bot found.");
         }
 
-        $token = $bots[$botKey][$type] ?? null;
+        $token = $bots[$token][$type] ?? null;
         if (!$token) {
-            throw new Exception("Token not configured for bot [$botKey] on [$type].");
+            throw new Exception("Token not configured for bot [$token] on [$type].");
         }
 
         $params = [
@@ -129,23 +129,79 @@ class Telegraph
             return $response;
         }
 
-        return self::tg($botKey, 'sendMessage', $params);
+        return self::tg($params);
     }
 
-    public static function tg($botKey, $method, $data = [])
+    public static function tg($data = [])
     {
-        $url = "https://foreign-server.com/{$botKey}/api.php?method=" . urlencode($method);
+        echo json_encode($data, JSON_UNESCAPED_UNICODE);
+        return true;
+    }
+
+    public static function pushTelegram($bot_name, $user_id)
+    {
+        $payload = [
+            "message" => [
+                "chat" => [
+                    "id" => $user_id,
+                    "type" => "private"
+                ],
+                "text" => "come_back_message"
+            ]
+        ];
+
+        $url = $_ENV['PUSH_TLG_URL'] . "?bot_name=" . urlencode($bot_name);
 
         $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 20);
+
+        if ($ch === false) {
+            throw new \Exception('Failed to initialize cURL');
+        }
+
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_HTTPHEADER => [
+                'Content-Type: application/json'
+            ],
+            CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_FORBID_REUSE => true,
+            CURLOPT_FRESH_CONNECT => true,
+
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => false,
+
+        ]);
 
         $response = curl_exec($ch);
+
+        if ($response === false) {
+            $error = curl_error($ch);
+            $errno = curl_errno($ch);
+
+            curl_close($ch);
+
+            throw new \Exception("cURL error ({$errno}): {$error}");
+        }
+
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
         curl_close($ch);
 
-        return $response;
-    }
+        if ($httpCode < 200 || $httpCode >= 300) {
+            throw new \Exception("HTTP request failed with status code {$httpCode}. Response: {$response}");
+        }
 
+        $decoded = json_decode($response, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new \Exception(
+                'Invalid JSON response: ' . json_last_error_msg()
+            );
+        }
+
+        return $decoded;
+    }
 }
