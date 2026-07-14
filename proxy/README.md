@@ -1,7 +1,7 @@
 # POSTMAN data
-## Update tokens : https://foreign-server.com/proxy.php?bot_name=update
+#### Update tokens : https://foreign-server.com/proxy.php?bot_name=update
 
-## Set webhook: https://foreign-server.com/proxy.php?bot_name=credit
+#### Set webhook: https://foreign-server.com/proxy.php?bot_name=credit
 ```{
     "bot_name" : "credit",
     "ok": true,
